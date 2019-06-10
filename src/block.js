@@ -16,14 +16,11 @@ class Block {
 
     // Constructor - argument data will be the object containing the transaction data
 	constructor(data){
-        this.hash = SHA256(data.height +                            // Hash of the block
-            this.body + this.time +
-            this.previousBlockHash).toString(); 
+        this.hash = null                                            // Hash of the block 
         this.height = data.height;                                  // Block Height (consecutive number of each block)
         this.body = Buffer(JSON.stringify(data.content))            // Will contain the transactions stored in the block, by default it will encode the data
                                     .toString('hex');   
-        this.time = parseInt(new Date().getTime().toString().       // Timestamp for the Block creation
-                                    slice(0, -3));                                           
+        this.time = null                                            // Timestamp for the Block creation                                           
         this.previousBlockHash = data.previousBlockHash;            // Reference to the previous Block Hash
     }
     

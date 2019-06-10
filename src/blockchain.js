@@ -12,6 +12,7 @@
 const BlockClass = require('./block.js');
 const bitcoinMessage = require('bitcoinjs-message');
 const hex2ascii = require('hex2ascii');
+const SHA256 = require('crypto-js/sha256');
 
 class Blockchain {
 
@@ -65,9 +66,13 @@ class Blockchain {
     _addBlock(block) {
         let self = this;
         return new Promise(async (resolve, reject) => {
-            self.chain.push(block)
-            self.height++
-            resolve(block)
+                block.time = parseInt(new Date().getTime().toString().       
+                slice(0, -3))
+                block.hash = SHA256(block.height + block.content + block.previousBlockHash + parseInt(new Date().getTime().toString().       
+                slice(0, -3))).toString()
+                self.chain.push(block)
+                self.height++
+                resolve(block)   
         });
     }
 
@@ -110,7 +115,7 @@ class Blockchain {
             if(currentTime - time < 50000) {
                 if(bitcoinMessage.verify(message, address, signature)) {
                     let block = new BlockClass.Block({height: self.height+1, content: {'address' : address, 'message': message, 'signature': signature, 'star': star}, 
-                            previousBlockHash: self.chain[self.height].previousBlockHash});
+                            previousBlockHash: self.chain[self.height].hash});
                     await this.validateChain(block)
                     await this._addBlock(block)
                     resolve(block)
@@ -196,4 +201,4 @@ class Blockchain {
 
 }
 
-module.exports.Blockchain = Blockchain;   
+module.exports.Blockchain = Blockchain;     
