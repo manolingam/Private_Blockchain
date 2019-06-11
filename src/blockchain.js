@@ -37,7 +37,7 @@ class Blockchain {
      */
     async initializeChain() {
         if(this.height === -1){
-            let block = new BlockClass.Block({height: 0, content: 'Genesis Block', previousBlockHash: null});
+            let block = new BlockClass.Block({data: 'Genesis Block'});
             await this._addBlock(block);
         }
     }
@@ -66,13 +66,19 @@ class Blockchain {
     _addBlock(block) {
         let self = this;
         return new Promise(async (resolve, reject) => {
-                block.time = parseInt(new Date().getTime().toString().       
-                slice(0, -3))
-                block.hash = SHA256(block.height + block.content + block.previousBlockHash + parseInt(new Date().getTime().toString().       
-                slice(0, -3))).toString()
+            block.time = parseInt(new Date().getTime().toString().slice(0, -3))
+            block.height = self.height + 1
+            if(self.height == -1){
+                block.hash = SHA256(block.height + block.data + block.previousBlockHash + block.time).toString()
                 self.chain.push(block)
                 self.height++
-                resolve(block)   
+            } else {
+                block.previousBlockHash = self.chain[self.height].hash
+                block.hash = SHA256(block.height + block.data + block.previousBlockHash + block.time).toString()
+                self.chain.push(block)
+                self.height++
+            }
+            resolve(block)   
         });
     }
 
@@ -114,8 +120,7 @@ class Blockchain {
         return new Promise(async (resolve, reject) => {
             if(currentTime - time < 50000) {
                 if(bitcoinMessage.verify(message, address, signature)) {
-                    let block = new BlockClass.Block({height: self.height+1, content: {'address' : address, 'message': message, 'signature': signature, 'star': star}, 
-                            previousBlockHash: self.chain[self.height].hash});
+                    let block = new BlockClass.Block({data: {'address' : address, 'message': message, 'signature': signature, 'star': star}});
                     await this.validateChain(block)
                     await this._addBlock(block)
                     resolve(block)
@@ -173,7 +178,7 @@ class Blockchain {
                 let ascii = hex2ascii(block.body)
                 // Parse the data to an object to be retrieve.
                 let content = JSON.parse(ascii)
-                if(content.address === address) {
+                if(content.data.address === address) {
                     stars.push(content)
                 }
             })
@@ -191,10 +196,12 @@ class Blockchain {
         let self = this;
         let errorLog = [];
         return new Promise(async (resolve, reject) => {
-            let result = await block.validate()
-            if(!result) {
-                errorLog.push(result)
-            }
+            self.chain.forEach((block) => {
+                let result = await block.validate()
+                if(!result) {
+                    errorLog.push(block.height)
+                }
+            })
             resolve(errorLog)
         });
     }
